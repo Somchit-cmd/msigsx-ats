@@ -1,9 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Building2, FileText, BarChart, Menu, X, LogOut } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Building2, FileText, BarChart, Menu, X, LogOut, UserCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useFirebase } from '@/contexts/FirebaseContext';
+import { toast } from 'sonner';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -13,6 +15,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const location = useLocation();
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
+  const { currentUser, logout, userRole, userData } = useFirebase();
   
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
   
@@ -35,12 +39,35 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     return () => window.removeEventListener('keydown', handleEscKey);
   }, [isSidebarOpen]);
 
-  const navigationItems = [
-    { path: '/', label: 'Home', icon: Building2 },
-    { path: '/report', label: 'New Report', icon: FileText },
-    { path: '/admin', label: 'Admin Dashboard', icon: Building2 },
-    { path: '/analytics', label: 'Analytics', icon: BarChart }
-  ];
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/');
+    } catch (error) {
+      toast.error("Failed to log out. Please try again.");
+    }
+  };
+
+  // Define navigation items based on user role
+  const getNavigationItems = () => {
+    const baseItems = [
+      { path: '/', label: 'Home', icon: Building2 },
+      { path: '/report', label: 'New Report', icon: FileText }
+    ];
+    
+    // Only show admin pages to admin users
+    if (userRole === 'admin') {
+      return [
+        ...baseItems,
+        { path: '/admin', label: 'Admin Dashboard', icon: Building2 },
+        { path: '/analytics', label: 'Analytics', icon: BarChart }
+      ];
+    }
+    
+    return baseItems;
+  };
+
+  const navigationItems = getNavigationItems();
 
   return (
     <div className="min-h-screen flex flex-col w-full bg-background">
@@ -58,6 +85,16 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             {navigationItems.find(item => item.path === location.pathname)?.label || 'Admin Tracker'}
           </h1>
         </div>
+        
+        {/* User info display in header */}
+        {currentUser && (
+          <div className="flex items-center">
+            <span className="mr-2 text-sm hidden md:block">
+              {userData?.name || currentUser.displayName || userData?.employeeId}
+            </span>
+            <UserCircle className="h-6 w-6" />
+          </div>
+        )}
       </header>
 
       <div className="flex-1 flex">
@@ -86,6 +123,18 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   <h2 className="text-2xl font-semibold text-primary">Admin Tracker</h2>
                   <p className="text-sm text-muted-foreground mt-1">Track field activities</p>
                 </div>
+                
+                {/* User info in sidebar */}
+                {currentUser && (
+                  <div className="mt-4 w-full md:hidden">
+                    <div className="text-sm font-medium">
+                      {userData?.name || currentUser.displayName}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {userData?.employeeId ? `ID: ${userData.employeeId}` : ''}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
             
@@ -113,10 +162,23 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             
             {/* Sidebar Footer */}
             <div className="p-4 border-t mt-auto">
-              <button className="flex items-center justify-center w-full px-4 py-2 rounded-lg text-sm text-muted-foreground hover:bg-secondary transition-colors duration-200">
-                <LogOut size={18} className="mr-2" />
-                <span>Logout</span>
-              </button>
+              {currentUser ? (
+                <button 
+                  onClick={handleLogout}
+                  className="flex items-center justify-center w-full px-4 py-2 rounded-lg text-sm text-muted-foreground hover:bg-secondary transition-colors duration-200"
+                >
+                  <LogOut size={18} className="mr-2" />
+                  <span>Logout</span>
+                </button>
+              ) : (
+                <Link
+                  to="/"
+                  className="flex items-center justify-center w-full px-4 py-2 rounded-lg text-sm text-muted-foreground hover:bg-secondary transition-colors duration-200"
+                >
+                  <UserCircle size={18} className="mr-2" />
+                  <span>Login</span>
+                </Link>
+              )}
             </div>
           </div>
         </aside>

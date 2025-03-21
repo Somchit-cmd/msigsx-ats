@@ -1,13 +1,13 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { 
   User, 
-  createUserWithEmailAndPassword, 
   signInWithEmailAndPassword, 
   signOut, 
-  onAuthStateChanged 
+  onAuthStateChanged,
+  createUserWithEmailAndPassword,
+  updateProfile
 } from 'firebase/auth';
-import { auth, db, storage } from '@/lib/firebase';
+import { auth, db, storage, COLLECTIONS, ROLES } from '@/lib/firebase';
 import { 
   collection, 
   addDoc, 
@@ -18,7 +18,9 @@ import {
   Timestamp, 
   updateDoc, 
   doc, 
-  deleteDoc 
+  deleteDoc,
+  getDoc,
+  setDoc
 } from 'firebase/firestore';
 import { 
   ref, 
@@ -26,12 +28,25 @@ import {
   getDownloadURL, 
   deleteObject 
 } from 'firebase/storage';
-import { Report, ReportFormData, Location } from '@/types';
+import { Report, ReportFormData, Location, UserRole } from '@/types';
+import { toast } from "sonner";
+
+interface UserData {
+  uid: string;
+  employeeId: string;
+  name: string;
+  role: UserRole;
+  email: string;
+}
 
 interface FirebaseContextProps {
   // Auth
   currentUser: User | null;
   isLoading: boolean;
+  userRole: UserRole | null;
+  userData: UserData | null;
+  employeeLogin: (employeeId: string, password: string) => Promise<void>;
+  createEmployee: (employeeId: string, name: string, password: string, role: UserRole) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -50,28 +65,163 @@ const FirebaseContext = createContext<FirebaseContextProps | undefined>(undefine
 
 export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [userRole, setUserRole] = useState<UserRole | null>(null);
+  const [userData, setUserData] = useState<UserData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user);
+      
+      if (user) {
+        // Get user data including role from Firestore
+        try {
+          const userDoc = await getDoc(doc(db, COLLECTIONS.USERS, user.uid));
+          if (userDoc.exists()) {
+            const userData = userDoc.data() as Omit<UserData, 'uid'>;
+            setUserData({ ...userData, uid: user.uid } as UserData);
+            setUserRole(userData.role);
+          } else {
+            setUserRole('user'); // Default role if not specified
+          }
+        } catch (error) {
+          console.error("Error fetching user data:", error);
+          setUserRole('user'); // Default role if error
+        }
+      } else {
+        setUserRole(null);
+        setUserData(null);
+      }
+      
       setIsLoading(false);
     });
 
     return unsubscribe;
   }, []);
 
-  // Auth functions
+  // Employee ID login
+  const employeeLogin = async (employeeId: string, password: string) => {
+    try {
+      // Query Firestore to find the user with the given employee ID
+      const q = query(
+        collection(db, COLLECTIONS.USERS),
+        where('employeeId', '==', employeeId)
+      );
+      
+      const querySnapshot = await getDocs(q);
+      
+      if (querySnapshot.empty) {
+        throw new Error("Employee ID not found");
+      }
+      
+      // Get the email associated with this employee ID
+      const userDoc = querySnapshot.docs[0];
+      const userData = userDoc.data();
+      
+      if (!userData.email) {
+        throw new Error("Employee account is not properly configured");
+      }
+      
+      // Login with email/password
+      await signInWithEmailAndPassword(auth, userData.email, password);
+      toast.success("Login successful");
+    } catch (error: any) {
+      console.error('Error logging in with employee ID:', error);
+      toast.error(error.message || "Login failed");
+      throw error;
+    }
+  };
+
+  // Create employee account (admin only)
+  const createEmployee = async (
+    employeeId: string,
+    name: string,
+    password: string,
+    role: UserRole
+  ) => {
+    try {
+      // Check if employeeId already exists
+      const q = query(
+        collection(db, COLLECTIONS.USERS),
+        where('employeeId', '==', employeeId)
+      );
+      
+      const querySnapshot = await getDocs(q);
+      
+      if (!querySnapshot.empty) {
+        throw new Error("Employee ID already exists");
+      }
+      
+      // Create a unique email address based on employee ID
+      const email = `${employeeId.toLowerCase()}@admintracker.local`;
+      
+      // Create Firebase Auth user
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+      
+      // Set display name
+      await updateProfile(user, {
+        displayName: name
+      });
+      
+      // Create user document in Firestore
+      await setDoc(doc(db, COLLECTIONS.USERS, user.uid), {
+        employeeId,
+        name,
+        email,
+        role,
+        createdAt: Timestamp.now()
+      });
+      
+      toast.success("Employee account created successfully");
+    } catch (error: any) {
+      console.error('Error creating employee account:', error);
+      toast.error(error.message || "Failed to create employee account");
+      throw error;
+    }
+  };
+
+  // Regular auth functions
   const signup = async (email: string, password: string) => {
-    await createUserWithEmailAndPassword(auth, email, password);
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+      
+      // Create user document with default role
+      await setDoc(doc(db, COLLECTIONS.USERS, user.uid), {
+        email,
+        role: ROLES.USER, // Default role
+        createdAt: Timestamp.now()
+      });
+      
+      toast.success("Account created successfully");
+    } catch (error: any) {
+      console.error('Error signing up:', error);
+      toast.error(error.message || "Failed to create account");
+      throw error;
+    }
   };
 
   const login = async (email: string, password: string) => {
-    await signInWithEmailAndPassword(auth, email, password);
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      toast.success("Login successful");
+    } catch (error: any) {
+      console.error('Error logging in:', error);
+      toast.error(error.message || "Login failed");
+      throw error;
+    }
   };
 
   const logout = async () => {
-    await signOut(auth);
+    try {
+      await signOut(auth);
+      toast.success("Logged out successfully");
+    } catch (error: any) {
+      console.error('Error logging out:', error);
+      toast.error(error.message || "Failed to log out");
+      throw error;
+    }
   };
 
   // Reports functions
@@ -85,8 +235,9 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }
 
       // Add report to Firestore
-      await addDoc(collection(db, 'reports'), {
+      await addDoc(collection(db, COLLECTIONS.REPORTS), {
         userName: reportData.userName,
+        userId: currentUser?.uid || '',
         purpose: reportData.purpose,
         timeOut: reportData.timeOut,
         timeIn: reportData.timeIn,
@@ -96,8 +247,11 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         notes: reportData.notes || '',
         createdAt: Timestamp.now()
       });
-    } catch (error) {
+      
+      toast.success("Report submitted successfully");
+    } catch (error: any) {
       console.error('Error submitting report:', error);
+      toast.error(error.message || "Failed to submit report");
       throw error;
     }
   };
@@ -105,7 +259,7 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const getReports = async (): Promise<Report[]> => {
     try {
       const q = query(
-        collection(db, 'reports'),
+        collection(db, COLLECTIONS.REPORTS),
         orderBy('createdAt', 'desc')
       );
       
@@ -134,7 +288,7 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const getReportsByUser = async (userName: string): Promise<Report[]> => {
     try {
       const q = query(
-        collection(db, 'reports'),
+        collection(db, COLLECTIONS.REPORTS),
         where('userName', '==', userName),
         orderBy('createdAt', 'desc')
       );
@@ -167,7 +321,7 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const endTimestamp = Timestamp.fromDate(endDate);
       
       const q = query(
-        collection(db, 'reports'),
+        collection(db, COLLECTIONS.REPORTS),
         where('createdAt', '>=', startTimestamp),
         where('createdAt', '<=', endTimestamp),
         orderBy('createdAt', 'desc')
@@ -210,6 +364,10 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const value = {
     currentUser,
     isLoading,
+    userRole,
+    userData,
+    employeeLogin,
+    createEmployee,
     login,
     signup,
     logout,

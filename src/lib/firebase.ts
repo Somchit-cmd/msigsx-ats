@@ -21,4 +21,16 @@ export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
 
+// Add collection names as constants for consistency
+export const COLLECTIONS = {
+  USERS: 'users',
+  REPORTS: 'reports',
+};
+
+// User roles
+export const ROLES = {
+  ADMIN: 'admin',
+  USER: 'user',
+};
+
 export default app;

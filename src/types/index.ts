@@ -1,4 +1,3 @@
-
 // Report types
 export interface Report {
   id: string;
@@ -123,3 +122,5 @@ export const MOCK_REPORTS: Report[] = [
     createdAt: "2023-06-05T08:15:00Z"
   }
 ];
+
+export type UserRole = 'admin' | 'user';
