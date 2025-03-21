@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CalendarClock, Clock, Car, FileText, Loader2 } from 'lucide-react';
@@ -17,10 +16,12 @@ import {
 import ImageUpload from '@/components/ImageUpload';
 import MapLocation from '@/components/MapLocation';
 import { ReportFormData, Location, VEHICLES } from '@/types';
+import { useFirebase } from '@/contexts/FirebaseContext';
 
 const ReportForm: React.FC = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { submitReport } = useFirebase();
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [formData, setFormData] = useState<ReportFormData>({
@@ -65,12 +66,11 @@ const ReportForm: React.FC = () => {
       return;
     }
     
-    // Simulate form submission
     setIsSubmitting(true);
     
     try {
-      // In a real app, this would send the data to your backend
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Submit to Firebase
+      await submitReport(formData);
       
       toast({
         title: "Report submitted successfully",
