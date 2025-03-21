@@ -56,19 +56,6 @@ const Index = () => {
             </Card>
           ))}
         </div>
-
-        <div className="glass-card rounded-xl p-8 text-center animate-slide-in opacity-0" style={{ animationDelay: '0.4s', animationFillMode: 'forwards' }}>
-          <h2 className="text-2xl font-bold mb-4">Need to Track Field Work?</h2>
-          <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
-            Quickly capture essential details about your outside work activities, including purpose, time, location, and photographic proof.
-          </p>
-          <Button asChild size="lg" className="gap-2">
-            <Link to="/report">
-              Create New Report
-              <ArrowRight size={16} />
-            </Link>
-          </Button>
-        </div>
       </div>
     </Layout>
   );
