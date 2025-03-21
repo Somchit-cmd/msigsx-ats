@@ -72,8 +72,21 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           <div className="flex flex-col h-full">
             {/* Sidebar Header with Logo */}
             <div className="p-6 border-b">
-              <h2 className="text-2xl font-semibold text-primary">Admin Tracker</h2>
-              <p className="text-sm text-muted-foreground mt-1">Track field activities</p>
+              <div className="flex items-center">
+                {/* Logo for Desktop */}
+                <div className="hidden md:block">
+                  <img 
+                    src="/lovable-uploads/6ae9b495-93d8-4206-b2c6-726deb8ff764.png" 
+                    alt="Admin Tracker Logo" 
+                    className="w-auto h-8 object-contain"
+                  />
+                </div>
+                {/* Text for Mobile */}
+                <div className="md:hidden">
+                  <h2 className="text-2xl font-semibold text-primary">Admin Tracker</h2>
+                  <p className="text-sm text-muted-foreground mt-1">Track field activities</p>
+                </div>
+              </div>
             </div>
             
             {/* Navigation Links */}
