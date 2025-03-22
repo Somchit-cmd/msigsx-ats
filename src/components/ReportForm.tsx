@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CalendarClock, Clock, Car, FileText, Loader2 } from 'lucide-react';
@@ -23,6 +22,7 @@ const ReportForm: React.FC = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { submitReport } = useSupabase();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [formData, setFormData] = useState<ReportFormData>({
     userName: '',

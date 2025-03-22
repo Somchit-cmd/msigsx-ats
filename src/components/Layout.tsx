@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Building2, FileText, BarChart, Menu, X, LogOut, UserCircle } from 'lucide-react';
@@ -83,7 +84,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         {currentUser && (
           <div className="flex items-center">
             <span className="mr-2 text-sm hidden md:block">
-              {userData?.name || currentUser.displayName || userData?.employeeId}
+              {userData?.name || userData?.employee_id}
             </span>
             <UserCircle className="h-6 w-6" />
           </div>
@@ -116,10 +117,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 {currentUser && (
                   <div className="mt-4 w-full md:hidden">
                     <div className="text-sm font-medium">
-                      {userData?.name || currentUser.displayName}
+                      {userData?.name}
                     </div>
                     <div className="text-xs text-muted-foreground">
-                      {userData?.employeeId ? `ID: ${userData.employeeId}` : ''}
+                      {userData?.employee_id ? `ID: ${userData.employee_id}` : ''}
                     </div>
                   </div>
                 )}
