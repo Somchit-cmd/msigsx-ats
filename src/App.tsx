@@ -4,7 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { FirebaseProvider, useFirebase } from "@/contexts/FirebaseContext";
+import { SupabaseProvider, useSupabase } from "@/contexts/SupabaseContext";
 import Index from "./pages/Index";
 import Report from "./pages/Report";
 import Admin from "./pages/Admin";
@@ -22,7 +22,7 @@ const ProtectedRoute = ({
   children: JSX.Element, 
   requiredRole?: 'admin' | 'user' | null 
 }) => {
-  const { currentUser, userRole, isLoading } = useFirebase();
+  const { currentUser, userRole, isLoading } = useSupabase();
   
   if (isLoading) {
     return <div className="flex justify-center items-center h-screen">Loading...</div>;
@@ -70,7 +70,7 @@ const AppRoutes = () => {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <FirebaseProvider>
+    <SupabaseProvider>
       <TooltipProvider>
         <Toaster />
         <Sonner />
@@ -78,7 +78,7 @@ const App = () => (
           <AppRoutes />
         </BrowserRouter>
       </TooltipProvider>
-    </FirebaseProvider>
+    </SupabaseProvider>
   </QueryClientProvider>
 );
 

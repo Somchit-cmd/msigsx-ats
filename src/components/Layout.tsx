@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Building2, FileText, BarChart, Menu, X, LogOut, UserCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { useFirebase } from '@/contexts/FirebaseContext';
+import { useSupabase } from '@/contexts/SupabaseContext';
 import { toast } from 'sonner';
 
 interface LayoutProps {
@@ -16,18 +15,16 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const location = useLocation();
   const isMobile = useIsMobile();
   const navigate = useNavigate();
-  const { currentUser, logout, userRole, userData } = useFirebase();
+  const { currentUser, logout, userRole, userData } = useSupabase();
   
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
   
-  // Close sidebar when route changes on mobile
   useEffect(() => {
     if (isMobile && isSidebarOpen) {
       setIsSidebarOpen(false);
     }
   }, [location.pathname, isMobile]);
 
-  // Close sidebar when pressing escape key
   useEffect(() => {
     const handleEscKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && isSidebarOpen) {
@@ -48,14 +45,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     }
   };
 
-  // Define navigation items based on user role
   const getNavigationItems = () => {
     const baseItems = [
       { path: '/', label: 'Home', icon: Building2 },
       { path: '/report', label: 'New Report', icon: FileText }
     ];
     
-    // Only show admin pages to admin users
     if (userRole === 'admin') {
       return [
         ...baseItems,
@@ -71,7 +66,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   return (
     <div className="min-h-screen flex flex-col w-full bg-background">
-      {/* Top Navbar for Mobile */}
       <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-sm border-b p-4 flex items-center justify-between">
         <div className="flex items-center">
           <button 
@@ -86,7 +80,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </h1>
         </div>
         
-        {/* User info display in header */}
         {currentUser && (
           <div className="flex items-center">
             <span className="mr-2 text-sm hidden md:block">
@@ -98,7 +91,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       </header>
 
       <div className="flex-1 flex">
-        {/* Sidebar */}
         <aside 
           className={cn(
             "fixed inset-y-0 left-0 z-50 w-64 transform bg-card border-r shadow-lg transition-transform duration-300 ease-in-out",
@@ -107,10 +99,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           )}
         >
           <div className="flex flex-col h-full">
-            {/* Sidebar Header with Logo */}
             <div className="p-6 border-b">
               <div className="flex items-center">
-                {/* Logo for Desktop */}
                 <div className="hidden md:block">
                   <img 
                     src="/lovable-uploads/6ae9b495-93d8-4206-b2c6-726deb8ff764.png" 
@@ -118,13 +108,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     className="w-auto h-8 object-contain"
                   />
                 </div>
-                {/* Text for Mobile */}
                 <div className="md:hidden">
                   <h2 className="text-2xl font-semibold text-primary">Admin Tracker</h2>
                   <p className="text-sm text-muted-foreground mt-1">Track field activities</p>
                 </div>
                 
-                {/* User info in sidebar */}
                 {currentUser && (
                   <div className="mt-4 w-full md:hidden">
                     <div className="text-sm font-medium">
@@ -138,7 +126,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               </div>
             </div>
             
-            {/* Navigation Links */}
             <nav className="flex-1 overflow-y-auto py-6 px-4">
               <ul className="space-y-2">
                 {navigationItems.map((item) => (
@@ -160,7 +147,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               </ul>
             </nav>
             
-            {/* Sidebar Footer */}
             <div className="p-4 border-t mt-auto">
               {currentUser ? (
                 <button 
@@ -183,7 +169,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </div>
         </aside>
 
-        {/* Backdrop for mobile */}
         {isSidebarOpen && (
           <div 
             className="fixed inset-0 bg-black/25 backdrop-blur-sm z-40 md:hidden" 
@@ -192,7 +177,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           />
         )}
 
-        {/* Main Content */}
         <main className={cn(
           "flex-1 transition-all duration-300 ease-in-out",
           "md:ml-0"

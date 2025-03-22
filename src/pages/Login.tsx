@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useFirebase } from '@/contexts/FirebaseContext';
+import { useSupabase } from '@/contexts/SupabaseContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -12,7 +12,7 @@ const LoginPage = () => {
   const [employeeId, setEmployeeId] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { employeeLogin, currentUser } = useFirebase();
+  const { employeeLogin, currentUser } = useSupabase();
   const navigate = useNavigate();
 
   React.useEffect(() => {

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CalendarClock, Clock, Car, FileText, Loader2 } from 'lucide-react';
@@ -16,13 +17,12 @@ import {
 import ImageUpload from '@/components/ImageUpload';
 import MapLocation from '@/components/MapLocation';
 import { ReportFormData, Location, VEHICLES } from '@/types';
-import { useFirebase } from '@/contexts/FirebaseContext';
+import { useSupabase } from '@/contexts/SupabaseContext';
 
 const ReportForm: React.FC = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { submitReport } = useFirebase();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { submitReport } = useSupabase();
   
   const [formData, setFormData] = useState<ReportFormData>({
     userName: '',
@@ -69,7 +69,7 @@ const ReportForm: React.FC = () => {
     setIsSubmitting(true);
     
     try {
-      // Submit to Firebase
+      // Submit to Supabase
       await submitReport(formData);
       
       toast({
